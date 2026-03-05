@@ -1,17 +1,32 @@
-# api
+# Proyecto_API
 
-A new Flutter project.
+Aplicación Flutter que consume una API de Rotten Tomatoes para mostrar información de películas.
 
-## Getting Started
+## Integrantes
+- Daniel Elias Di Marco Borges
+- Oswal Alexander Wscanga Bandres
+- Angie Maritza Carrillo Fuquene
+- Manuel Felipe Carrillo Fuquene
 
-This project is a starting point for a Flutter application.
+## Tecnologías
+- Flutter
+- Dart
+- API Rotten Tomatoes
+- HTTP Requests
+- JSON
 
-A few resources to get you started if this is your first Flutter project:
+## Descripción
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Esta aplicación permite consultar información de películas usando una API externa.  
+Se mostrarán datos como:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Título
+- Año
+- Género
+- Actores
+- Director
+- Poster
+
+
+
+
