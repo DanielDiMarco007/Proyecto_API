@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
         title: const Text("Películas"),
       ),
       body: FutureBuilder<List<Movie>>(
-        future: MovieService().getMovies(), 
+        future: MovieService().getMovies(),
         builder: (context, snapshot) {
           // Mientras se cargan los datos
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -38,6 +38,8 @@ class HomeScreen extends StatelessWidget {
             itemCount: movies.length,
             itemBuilder: (context, index) {
               final movie = movies[index];
+
+              // Cada película en una tarjeta
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 elevation: 3,
