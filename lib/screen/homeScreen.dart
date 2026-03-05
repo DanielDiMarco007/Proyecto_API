@@ -1,31 +1,70 @@
-// Importa la librería principal de Flutter para construir interfaces
 import 'package:flutter/material.dart';
-
-// Importa el servicio que se encarga de consumir la API de películas
 import '../services/movie_service.dart';
 
-// Clase principal de la pantalla de inicio
-// StatelessWidget significa que la pantalla no maneja estados internos
-class HomeScreen extends StatelessWidget {
+import '../models/movie_list.dart';
 
-  // Constructor constante para optimizar el rendimiento del widget
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // Método build: aquí se construye toda la interfaz gráfica
   @override
   Widget build(BuildContext context) {
-
-    // Scaffold es la estructura base de una pantalla en Flutter
     return Scaffold(
-
-      // Barra superior de la aplicación
       appBar: AppBar(
         title: const Text("Películas"),
       ),
+      body: FutureBuilder<MovieList>(
+        future: MovieService().getMovies(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData || snapshot.data!.results.isEmpty) {
+            return const Center(child: Text("No hay datos disponibles"));
+          }
 
-      // Body será el contenido principal
-      body: const Center(
-        child: Text("Cargando películas..."),
+          final movies = snapshot.data!.results;
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: movies.map((movie) {
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    elevation: 3,
+                    child: ListTile(
+                      leading: Image.network(
+                        movie.posterUrl,
+                        width: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(Icons.movie);
+                        },
+                      ),
+                      title: Text(movie.title),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Año: ${movie.year}"),
+                          Text("Rating: ${movie.rating}"),
+                          Text(
+                            movie.shortSpoiler,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      isThreeLine: true,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
