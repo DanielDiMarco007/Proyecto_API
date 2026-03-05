@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/movie_service.dart';
 import '../models/movie.dart';
 
-/// Pantalla principal que muestra la lista de películas
+/// Pantalla principal mostrando la lista de películas con diseño mejorado
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -15,57 +15,79 @@ class HomeScreen extends StatelessWidget {
       body: FutureBuilder<List<Movie>>(
         future: MovieService().getMovies(),
         builder: (context, snapshot) {
-          // Mientras se cargan los datos
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          // Si ocurre un error
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
-
-          // Si no hay datos
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("No hay datos disponibles"));
           }
 
           final movies = snapshot.data!;
 
-          // Lista scrollable eficiente
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: movies.length,
             itemBuilder: (context, index) {
               final movie = movies[index];
 
-              // Cada película en una tarjeta
               return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                elevation: 3,
-                child: ListTile(
-                  leading: Image.network(
-                    movie.posterUrl,
-                    width: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.movie);
-                    },
-                  ),
-                  title: Text(movie.title),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
                     children: [
-                      Text("Año: ${movie.year}"),
-                      Text("Rating: ${movie.rating}"),
-                      Text(
-                        movie.shortSpoiler,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      // Poster más grande
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          movie.posterUrl,
+                          width: 80,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 80,
+                              height: 120,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.movie, size: 40),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Información de la película
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              movie.title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text("Año: ${movie.year}"),
+                            Text("Rating: ${movie.rating} ⭐"),
+                            const SizedBox(height: 6),
+                            Text(
+                              movie.shortSpoiler,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                  isThreeLine: true,
                 ),
               );
             },
