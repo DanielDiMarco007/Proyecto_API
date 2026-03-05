@@ -1,24 +1,22 @@
 
 
 
+
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/movie_list.dart';
+import '../models/movie.dart';
 
-/// Servicio para obtener películas desde la API
 class MovieService {
-
-  /// Método que trae la lista de películas desde la API
-  Future<MovieList> getMovies() async {
-    // Reemplaza la URL por la de tu API real
-    final response = await http.get(Uri.parse(" https://rottentomato.p.rapidapi.com/get-spoilers-for-movie?spoiler_id=grudge-match"));
+  /// Trae todas las películas desde la API
+  Future<List<Movie>> getMovies() async {
+    final response = await http.get(Uri.parse("https://rottentomato.p.rapidapi.com/get-spoilers-for-movie?spoiler_id=grudge-match")); // pon tu URL real
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // Convierte el JSON en MovieList
-      return MovieList.fromJson(data);
+      final results = data['results'] as List;
+      return results.map((json) => Movie.fromJson(json)).toList();
     } else {
-      // Si falla la petición, lanza excepción
       throw Exception('Error al cargar películas');
     }
   }
