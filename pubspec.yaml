@@ -35,6 +35,13 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  cached_network_image: ^3.2.3
+  shared_preferences: ^2.1.1
+  shimmer: ^2.0.0
+  flutter_rating_bar: ^4.0.0
+  url_launcher: ^6.1.10
+  # share_plus removed due to platform/plugin incompatibility with current Dart SDK.
+  # share_plus: ^4.5.3
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +64,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+dependency_overrides:
+  # Pin win32 to a 2.x version compatible with Dart 3.11 runtimes on this machine.
+  win32: 2.6.0
 
   # To add assets to your application, add an assets section, like this:
   # assets:
