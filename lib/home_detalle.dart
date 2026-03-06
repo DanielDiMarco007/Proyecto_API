@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'detalle_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeDetalleSample extends StatelessWidget {
   final List movies = [
     {
       "title": "Interstellar",
@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
     },
   ];
 
-  HomeScreen({super.key});
+  HomeDetalleSample({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +51,9 @@ class HomeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => DetalleScreen(
-                      title: movie["title"],
-                      image: movie["image"],
-                      description: movie["description"],
+                      titulo: movie["title"],
+                      imagen: movie["image"],
+                      descripcion: movie["description"],
                     ),
                   ),
                 );

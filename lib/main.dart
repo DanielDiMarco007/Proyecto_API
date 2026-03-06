@@ -245,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         key: const ValueKey('list'),
                         padding: const EdgeInsets.all(12),
                         itemCount: _filteredPeliculas.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final pelicula = _filteredPeliculas[index];
                           return _buildListTile(context, pelicula);
@@ -272,6 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
               titulo: pelicula.titulo,
               imagen: pelicula.imagen,
               descripcion: pelicula.descripcion,
+              director: pelicula.director,
+              anio: pelicula.anio,
               rating: pelicula.rating,
             ),
           ),
@@ -354,6 +356,8 @@ class _HomeScreenState extends State<HomeScreen> {
               titulo: pelicula.titulo,
               imagen: pelicula.imagen,
               descripcion: pelicula.descripcion,
+              director: pelicula.director,
+              anio: pelicula.anio,
               rating: pelicula.rating,
             ),
           ),
@@ -362,30 +366,30 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-                child: Hero(
-                  tag: pelicula.imagen,
-                  child: Semantics(
-                    label: '${pelicula.titulo} poster',
-                    child: CachedNetworkImage(
-                      imageUrl: pelicula.imagen,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Shimmer.fromColors(
-                        baseColor: Colors.grey[900]!,
-                        highlightColor: Colors.grey[800]!,
-                        child: Container(
-                          width: double.infinity,
-                          color: Colors.grey[900],
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
+              child: Hero(
+                tag: pelicula.imagen,
+                child: Semantics(
+                  label: '${pelicula.titulo} poster',
+                  child: CachedNetworkImage(
+                    imageUrl: pelicula.imagen,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[900]!,
+                      highlightColor: Colors.grey[800]!,
+                      child: Container(
+                        width: double.infinity,
                         color: Colors.grey[900],
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.broken_image, color: Colors.white54),
                       ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[900],
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.broken_image, color: Colors.white54),
                     ),
                   ),
                 ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(8),
@@ -397,8 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: Text(
                           pelicula.titulo,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -409,34 +412,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           RatingBarIndicator(
                             rating: pelicula.rating,
-                            itemBuilder: (context, index) => const Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                            ),
+                            itemBuilder: (context, index) => const Icon(Icons.star, color: Colors.amber),
                             itemCount: 5,
                             itemSize: 12.0,
                             direction: Axis.horizontal,
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            pelicula.rating.toStringAsFixed(1),
-                            style: const TextStyle(color: Colors.amber, fontSize: 11),
-                          ),
+                          Text(pelicula.rating.toStringAsFixed(1), style: const TextStyle(color: Colors.amber, fontSize: 11)),
                         ],
                       ),
                     ],
                   ),
-                  Text(
-                    "${pelicula.director} • ${pelicula.anio}",
-                    style: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                  ),
+                  Text("${pelicula.director} • ${pelicula.anio}", style: TextStyle(fontSize: 11, color: Colors.grey[400])),
                   const SizedBox(height: 4),
-                  Text(
-                    pelicula.descripcion,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                  ),
+                  Text(pelicula.descripcion, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey[400])),
                 ],
               ),
             ),
