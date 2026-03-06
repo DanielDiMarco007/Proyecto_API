@@ -46,7 +46,6 @@ class Pelicula {
   final String director;
   final int anio;
   final double rating;
-  final String? trailer;
 
   Pelicula({
     required this.titulo,
@@ -55,7 +54,6 @@ class Pelicula {
     required this.director,
     required this.anio,
     required this.rating,
-    this.trailer,
   });
 }
 
@@ -73,8 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isGrid = false;
   bool _sortByRating = false;
   bool _showOnlyFavorites = false;
-  bool _sortingPulse = false;
-  List<bool> _itemVisible = [];
 
   @override
   void initState() {
@@ -90,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
         director: "Christopher Nolan",
         anio: 2014,
         rating: 4.7,
-        trailer: 'https://www.youtube.com/watch?v=zSWdZVtXT7E',
       ),
       Pelicula(
         titulo: "Inception",
@@ -101,7 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
         director: "Christopher Nolan",
         anio: 2010,
         rating: 4.6,
-        trailer: 'https://www.youtube.com/watch?v=8hP9D6kZseM',
       ),
       Pelicula(
         titulo: "The Dark Knight",
@@ -112,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
         director: "Christopher Nolan",
         anio: 2008,
         rating: 4.9,
-        trailer: 'https://www.youtube.com/watch?v=EXeTwQWrcwY',
       ),
     ];
 
@@ -134,9 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final q = _searchController.text.toLowerCase().trim();
     List<Pelicula> list = List.of(_allPeliculas);
     if (q.isNotEmpty) {
-      list = list
-          .where((p) => p.titulo.toLowerCase().contains(q) || p.descripcion.toLowerCase().contains(q))
-          .toList();
+      list = list.where((p) => p.titulo.toLowerCase().contains(q) || p.descripcion.toLowerCase().contains(q)).toList();
     }
     if (_showOnlyFavorites) {
       final favs = FavoritesService.instance.favorites.value;
@@ -147,19 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() {
       _filteredPeliculas = list;
-      // reset visibility flags for staggered animation
-      _itemVisible = List<bool>.filled(_filteredPeliculas.length, false);
     });
-
-    // Run a staggered reveal for items
-    for (var i = 0; i < _filteredPeliculas.length; i++) {
-      Future.delayed(Duration(milliseconds: 80 * i), () {
-        if (!mounted) return;
-        setState(() {
-          if (i < _itemVisible.length) _itemVisible[i] = true;
-        });
-      });
-    }
   }
 
   Future<void> _loadPreferences() async {
@@ -178,7 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    FavoritesService.instance.favorites.removeListener(_onFavoritesChanged);
     super.dispose();
   }
 
@@ -191,8 +169,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _allPeliculas.shuffle();
+      _filteredPeliculas = List.of(_allPeliculas);
       _searchController.clear();
-      _applyFilters();
     });
   }
 
@@ -211,46 +189,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void _toggleSortByRating() {
     setState(() {
       _sortByRating = !_sortByRating;
-      _applyFilters();
-      // trigger a small pulse animation on the list to emphasize the change
-      _sortingPulse = true;
-      Future.delayed(const Duration(milliseconds: 380), () {
-        if (mounted) setState(() => _sortingPulse = false);
-      });
-      // feedback
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_sortByRating ? 'Ordenado por rating' : 'Orden restaurado')));
+      if (_sortByRating) {
+        _filteredPeliculas.sort((a, b) => b.rating.compareTo(a.rating));
+      } else {
+        _filteredPeliculas = List.of(_allPeliculas);
+      }
     });
-  }
-
-  PageRouteBuilder _createRoute(Pelicula pelicula) {
-    return PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 360),
-      reverseTransitionDuration: const Duration(milliseconds: 260),
-      pageBuilder: (context, animation, secondaryAnimation) => DetalleScreen(
-        titulo: pelicula.titulo,
-        imagen: pelicula.imagen,
-        descripcion: pelicula.descripcion,
-        director: pelicula.director,
-        anio: pelicula.anio,
-        rating: pelicula.rating,
-        trailer: pelicula.trailer,
-      ),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.98, end: 1.0).animate(curved),
-            child: child,
-          ),
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 700;
+    final showGrid = _isGrid || isWide;
 
     return Scaffold(
       appBar: AppBar(
@@ -266,43 +216,17 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             icon: Icon(_showOnlyFavorites ? Icons.favorite : Icons.favorite_border, color: _showOnlyFavorites ? Colors.redAccent : Colors.white),
           ),
-          // Animated view toggle for a smoother, more elegant feel
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: IconButton(
-              tooltip: _isGrid ? 'Ver como lista' : 'Ver como cuadrícula',
-              onPressed: () {
-                _toggleView();
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isGrid ? 'Vista cuadrícula' : 'Vista lista')));
-              },
-              icon: AnimatedRotation(
-                turns: _isGrid ? 0.5 : 0.0,
-                duration: const Duration(milliseconds: 420),
-                curve: Curves.easeInOut,
-                child: Icon(_isGrid ? Icons.view_list : Icons.grid_view),
-              ),
-            ),
+          IconButton(
+            tooltip: _isGrid ? 'Ver como lista' : 'Ver como cuadrícula',
+            onPressed: _toggleView,
+            icon: Icon(_isGrid ? Icons.view_list : Icons.grid_view),
           ),
         ],
       ),
-      floatingActionButton: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(boxShadow: [BoxShadow(color: Colors.black.withAlpha(40), blurRadius: 12)]),
-        child: FloatingActionButton.extended(
-          onPressed: _toggleSortByRating,
-          backgroundColor: _sortByRating ? Colors.amber[700] : Colors.tealAccent[700],
-          icon: AnimatedRotation(
-            turns: _sortByRating ? 0.15 : 0.0,
-            duration: const Duration(milliseconds: 380),
-            curve: Curves.easeInOut,
-            child: Icon(_sortByRating ? Icons.star : Icons.sort),
-          ),
-          label: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            child: Text(_sortByRating ? 'Top rated' : 'Ordenar por rating', key: ValueKey<bool>(_sortByRating)),
-          ),
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _toggleSortByRating,
+        icon: Icon(_sortByRating ? Icons.star : Icons.sort),
+        label: Text(_sortByRating ? 'Top rated' : 'Ordenar por rating'),
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
@@ -327,45 +251,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _isGrid || isWide
-                    ? AnimatedScale(
-                        scale: _sortingPulse ? 0.98 : 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: GridView.builder(
-                          key: const ValueKey('grid'),
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isWide ? 3 : 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.7,
-                          ),
-                          itemCount: _filteredPeliculas.length,
-                          itemBuilder: (context, index) {
-                            final pelicula = _filteredPeliculas[index];
-                            final child = _buildGridCard(context, pelicula);
-                            return _animatedItem(child, index);
-                          },
-                        ),
-                      )
-                    : AnimatedScale(
-                        scale: _sortingPulse ? 0.98 : 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: ListView.separated(
-                          key: const ValueKey('list'),
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _filteredPeliculas.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final pelicula = _filteredPeliculas[index];
-                            final child = _buildListTile(context, pelicula);
-                            return _animatedItem(child, index);
-                          },
-                        ),
+              child: showGrid
+                  ? GridView.builder(
+                      key: const ValueKey('grid'),
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isWide ? 3 : 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.7,
                       ),
-              ),
+                      itemCount: _filteredPeliculas.length,
+                      itemBuilder: (context, index) {
+                        final pelicula = _filteredPeliculas[index];
+                        return _buildGridCard(context, pelicula);
+                      },
+                    )
+                  : ListView.separated(
+                      key: const ValueKey('list'),
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _filteredPeliculas.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final pelicula = _filteredPeliculas[index];
+                        return _buildListTile(context, pelicula);
+                      },
+                    ),
             ),
           ],
         ),
@@ -379,7 +290,19 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(_createRoute(pelicula)),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetalleScreen(
+              titulo: pelicula.titulo,
+              imagen: pelicula.imagen,
+              descripcion: pelicula.descripcion,
+              director: pelicula.director,
+              anio: pelicula.anio,
+              rating: pelicula.rating,
+            ),
+          ),
+        ),
         child: SizedBox(
           height: 100,
           child: Row(
@@ -413,7 +336,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  // favorite toggle badge (tap to toggle)
                   Positioned(
                     top: 6,
                     right: 6,
@@ -422,9 +344,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context, favs, _) {
                         final fav = favs.contains(pelicula.imagen);
                         return GestureDetector(
-                          onTap: () {
-                            FavoritesService.instance.toggle(pelicula.imagen);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(fav ? 'Eliminado de favoritos' : 'Añadido a favoritos')));
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await FavoritesService.instance.toggle(pelicula.imagen);
+                            if (!mounted) return;
+                            messenger.showSnackBar(SnackBar(content: Text(fav ? 'Eliminado de favoritos' : 'Añadido a favoritos')));
                             if (_showOnlyFavorites) _applyFilters();
                           },
                           child: AnimatedContainer(
@@ -479,7 +403,19 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(_createRoute(pelicula)),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetalleScreen(
+              titulo: pelicula.titulo,
+              imagen: pelicula.imagen,
+              descripcion: pelicula.descripcion,
+              director: pelicula.director,
+              anio: pelicula.anio,
+              rating: pelicula.rating,
+            ),
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -518,9 +454,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context, favs, _) {
                         final fav = favs.contains(pelicula.imagen);
                         return GestureDetector(
-                          onTap: () {
-                            FavoritesService.instance.toggle(pelicula.imagen);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(fav ? 'Eliminado de favoritos' : 'Añadido a favoritos')));
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await FavoritesService.instance.toggle(pelicula.imagen);
+                            if (!mounted) return;
+                            messenger.showSnackBar(SnackBar(content: Text(fav ? 'Eliminado de favoritos' : 'Añadido a favoritos')));
                             if (_showOnlyFavorites) _applyFilters();
                           },
                           child: AnimatedContainer(
@@ -576,22 +514,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Wraps each item with a small staggered entrance animation.
-  Widget _animatedItem(Widget child, int index) {
-    final visible = (index < _itemVisible.length) ? _itemVisible[index] : false;
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 360),
-      opacity: visible ? 1.0 : 0.0,
-      curve: Curves.easeOut,
-      child: AnimatedSlide(
-        duration: const Duration(milliseconds: 360),
-        offset: visible ? Offset.zero : const Offset(0, 0.06),
-        curve: Curves.easeOutCubic,
-        child: child,
       ),
     );
   }
