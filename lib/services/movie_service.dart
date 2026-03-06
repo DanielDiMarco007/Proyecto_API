@@ -4,19 +4,19 @@ import '../models/movie.dart';
 
 class MovieService {
   // API de TMDB - Reemplaza con tu API key si quieres usar la API real
-  static const String TMDB_API_KEY = "TU_TMDB_API_KEY_AQUI";
-  static const String TMDB_BASE_URL =
+  static const String tmdbApiKey = "TU_TMDB_API_KEY_AQUI";
+  static const String tmdbBaseUrl =
       "https://api.themoviedb.org/3/movie/popular";
 
   /// Obtiene películas desde la API o usa datos locales si falla
   Future<List<Movie>> getMovies() async {
     try {
       // Intenta primero con la API real
-      if (TMDB_API_KEY != "TU_TMDB_API_KEY_AQUI") {
+      if (tmdbApiKey != "TU_TMDB_API_KEY_AQUI") {
         return await _getMoviesFromAPI();
       }
     } catch (e) {
-      print("Error al obtener películas de la API: $e");
+      // Error silencioso - usar fallback
     }
     // Si falla o no hay key, devuelve películas locales
     return _getLocalMovies();
@@ -25,7 +25,7 @@ class MovieService {
   /// Obtiene películas desde TMDB API
   Future<List<Movie>> _getMoviesFromAPI() async {
     final response = await http.get(
-      Uri.parse("$TMDB_BASE_URL?api_key=$TMDB_API_KEY&language=es-ES"),
+      Uri.parse("$tmdbBaseUrl?api_key=$tmdbApiKey&language=es-ES"),
     ).timeout(Duration(seconds: 10));
 
     if (response.statusCode == 200) {
