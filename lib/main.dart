@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
-import 'screens/home_screen.dart';
+import 'screen/homeScreen.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -14,12 +14,19 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'App Películas',
       debugShowCheckedModeBanner: false,
-
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+        primaryColor: Colors.blue,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E1E1E),
+          elevation: 0,
+          centerTitle: true,
+        ),
+      ),
       initialRoute: '/',
-
       routes: {
         '/': (context) => SplashScreen(),
-        '/home': (context) => HomeScreen(),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }
