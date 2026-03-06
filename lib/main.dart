@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'detalle_screen.dart';
 
 void main() {
@@ -14,25 +18,20 @@ class MyApp extends StatelessWidget {
       title: 'Películas',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        // Set a true black background
         scaffoldBackgroundColor: Colors.black,
-        // Slightly lighter cards to stand out over black
         cardColor: const Color(0xFF1E1E1E),
-        // AppBar matches the black background but with subtle elevation
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.black,
           elevation: 1,
           centerTitle: true,
         ),
-        // Accent color for controls
         colorScheme: ThemeData.dark().colorScheme.copyWith(
-              primary: Colors.tealAccent,
-            ),
-        // Text theme: ensure bodies are white by default
+          primary: Colors.tealAccent,
+        ),
         textTheme: ThemeData.dark().textTheme.apply(
-              bodyColor: Colors.white,
-              displayColor: Colors.white,
-            ),
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        ),
       ),
       home: const HomeScreen(),
     );
@@ -43,11 +42,17 @@ class Pelicula {
   final String titulo;
   final String descripcion;
   final String imagen;
+  final String director;
+  final int anio;
+  final double rating;
 
   Pelicula({
     required this.titulo,
     required this.descripcion,
     required this.imagen,
+    required this.director,
+    required this.anio,
+    required this.rating,
   });
 }
 
@@ -59,16 +64,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Full data set
   late final List<Pelicula> _allPeliculas;
-  // Filtered according to search
   late List<Pelicula> _filteredPeliculas;
   final TextEditingController _searchController = TextEditingController();
   bool _isGrid = false;
+  bool _sortByRating = false;
 
   @override
   void initState() {
     super.initState();
+
     _allPeliculas = [
       Pelicula(
         titulo: "Interstellar",
@@ -76,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
             "Un grupo de astronautas viaja a través de un agujero de gusano en busca de un nuevo hogar para la humanidad.",
         imagen:
             "https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg",
+        director: "Christopher Nolan",
+        anio: 2014,
+        rating: 4.7,
       ),
       Pelicula(
         titulo: "Inception",
@@ -83,6 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
             "Un ladrón roba secretos corporativos entrando en los sueños de las personas.",
         imagen:
             "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+        director: "Christopher Nolan",
+        anio: 2010,
+        rating: 4.6,
       ),
       Pelicula(
         titulo: "The Dark Knight",
@@ -90,11 +101,27 @@ class _HomeScreenState extends State<HomeScreen> {
             "Batman enfrenta al Joker, un criminal que quiere sembrar el caos en Gotham.",
         imagen:
             "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+        director: "Christopher Nolan",
+        anio: 2008,
+        rating: 4.9,
       ),
     ];
 
     _filteredPeliculas = List.of(_allPeliculas);
     _searchController.addListener(_onSearchChanged);
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final val = prefs.getBool('isGrid') ?? false;
+      setState(() {
+        _isGrid = val;
+      });
+    } catch (_) {
+      // ignore errors and keep default
+    }
   }
 
   @override
@@ -106,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onSearchChanged() {
     final q = _searchController.text.toLowerCase().trim();
+
     setState(() {
       if (q.isEmpty) {
         _filteredPeliculas = List.of(_allPeliculas);
@@ -120,19 +148,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onRefresh() async {
-    // Simulate refresh - in real app you'd re-fetch remote data
     await Future.delayed(const Duration(milliseconds: 600));
+
     setState(() {
-      // For demo, we simply reverse the list briefly to show change
       _allPeliculas.shuffle();
       _filteredPeliculas = List.of(_allPeliculas);
       _searchController.clear();
     });
   }
 
-  void _toggleView() {
+  void _toggleView() async {
     setState(() {
       _isGrid = !_isGrid;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isGrid', _isGrid);
+    } catch (_) {
+      // ignore write errors
+    }
+  }
+
+  void _toggleSortByRating() {
+    setState(() {
+      _sortByRating = !_sortByRating;
+      if (_sortByRating) {
+        _filteredPeliculas.sort((a, b) => b.rating.compareTo(a.rating));
+      } else {
+        _filteredPeliculas = List.of(_allPeliculas);
+      }
     });
   }
 
@@ -151,40 +195,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _toggleSortByRating,
+        icon: Icon(_sortByRating ? Icons.star : Icons.sort),
+        label: Text(_sortByRating ? 'Top rated' : 'Ordenar por rating'),
+      ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Buscar películas...'.toLowerCase(),
-                        hintStyle: TextStyle(color: Colors.grey[500]),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white70),
-                        filled: true,
-                        fillColor: Colors.white12,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                      ),
-                    ),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Buscar películas...',
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                  filled: true,
+                  fillColor: Colors.white12,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
-                  const SizedBox(width: 8),
-                  if (!isWide)
-                    IconButton(
-                      onPressed: _onRefresh,
-                      icon: const Icon(Icons.refresh),
-                      color: Colors.white70,
-                    ),
-                ],
+                ),
               ),
             ),
             Expanded(
@@ -193,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _isGrid || isWide
                     ? GridView.builder(
                         key: const ValueKey('grid'),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        padding: const EdgeInsets.all(12),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: isWide ? 3 : 2,
                           crossAxisSpacing: 12,
@@ -208,9 +243,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     : ListView.separated(
                         key: const ValueKey('list'),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                        padding: const EdgeInsets.all(12),
                         itemCount: _filteredPeliculas.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final pelicula = _filteredPeliculas[index];
                           return _buildListTile(context, pelicula);
@@ -227,7 +262,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildListTile(BuildContext context, Pelicula pelicula) {
     return Card(
       elevation: 4,
-      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -238,6 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
               titulo: pelicula.titulo,
               imagen: pelicula.imagen,
               descripcion: pelicula.descripcion,
+              rating: pelicula.rating,
             ),
           ),
         ),
@@ -247,17 +282,23 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Hero(
                 tag: pelicula.imagen,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                  child: Image.network(
-                    pelicula.imagen,
+                child: Semantics(
+                  label: '${pelicula.titulo} poster',
+                  child: CachedNetworkImage(
+                    imageUrl: pelicula.imagen,
                     width: 120,
                     height: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => Container(
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[900]!,
+                      highlightColor: Colors.grey[800]!,
+                      child: Container(
+                        width: 120,
+                        height: double.infinity,
+                        color: Colors.grey[900],
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
                       width: 120,
                       color: Colors.grey[900],
                       alignment: Alignment.center,
@@ -272,20 +313,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         pelicula.titulo,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "${pelicula.director} • ${pelicula.anio}",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         pelicula.descripcion,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[400]),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[400]),
                       ),
                     ],
                   ),
@@ -301,7 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildGridCard(BuildContext context, Pelicula pelicula) {
     return Card(
       elevation: 3,
-      color: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -312,50 +354,88 @@ class _HomeScreenState extends State<HomeScreen> {
               titulo: pelicula.titulo,
               imagen: pelicula.imagen,
               descripcion: pelicula.descripcion,
+              rating: pelicula.rating,
             ),
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Make image take the available vertical space first
             Expanded(
-              child: Hero(
-                tag: pelicula.imagen,
-                child: AspectRatio(
-                  aspectRatio: 2 / 3,
-                  child: Image.network(
-                    pelicula.imagen,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => Container(
-                      color: Colors.grey[900],
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image, color: Colors.white54),
+                child: Hero(
+                  tag: pelicula.imagen,
+                  child: Semantics(
+                    label: '${pelicula.titulo} poster',
+                    child: CachedNetworkImage(
+                      imageUrl: pelicula.imagen,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[900]!,
+                        highlightColor: Colors.grey[800]!,
+                        child: Container(
+                          width: double.infinity,
+                          color: Colors.grey[900],
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[900],
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image, color: Colors.white54),
+                      ),
                     ),
                   ),
                 ),
-              ),
             ),
-            // Title + description in a fixed-height area to avoid overflow
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    pelicula.titulo,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          pelicula.titulo,
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          RatingBarIndicator(
+                            rating: pelicula.rating,
+                            itemBuilder: (context, index) => const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                            ),
+                            itemCount: 5,
+                            itemSize: 12.0,
+                            direction: Axis.horizontal,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            pelicula.rating.toStringAsFixed(1),
+                            style: const TextStyle(color: Colors.amber, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
+                  Text(
+                    "${pelicula.director} • ${pelicula.anio}",
+                    style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     pelicula.descripcion,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
                 ],
               ),

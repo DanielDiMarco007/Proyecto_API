@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 class DetalleScreen extends StatelessWidget {
   final String titulo;
   final String descripcion;
   final String imagen;
+  final double? rating;
 
   /// Constructor compatible with both Spanish and English named parameters.
   ///
@@ -14,6 +18,8 @@ class DetalleScreen extends StatelessWidget {
     String? titulo,
     String? descripcion,
     String? imagen,
+    double? rating,
+    double? score,
     String? title,
     String? description,
     String? image,
@@ -25,7 +31,8 @@ class DetalleScreen extends StatelessWidget {
             'Debe proporcionar `imagen` o `image`'),
   titulo = titulo ?? title!,
   descripcion = descripcion ?? description!,
-  imagen = imagen ?? image!;
+  imagen = imagen ?? image!,
+  rating = rating ?? score;
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +47,31 @@ class DetalleScreen extends StatelessWidget {
             // Constrain image height to avoid overflow on small screens
             Hero(
               tag: imagen,
-              child: SizedBox(
-                width: double.infinity,
-                height: 260,
-                child: Image.network(
-                  imagen,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => Container(
-                    color: Colors.grey[900],
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.broken_image,
-                      size: 48,
-                      color: Colors.white54,
+              child: Semantics(
+                label: '$titulo poster',
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 260,
+                  child: CachedNetworkImage(
+                    imageUrl: imagen,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.grey[900]!,
+                      highlightColor: Colors.grey[800]!,
+                      child: Container(
+                        width: double.infinity,
+                        height: 260,
+                        color: Colors.grey[900],
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[900],
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Colors.white54,
+                      ),
                     ),
                   ),
                 ),
@@ -69,6 +88,28 @@ class DetalleScreen extends StatelessWidget {
                 ),
               ),
             ),
+            if (rating != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    RatingBarIndicator(
+                      rating: rating!,
+                      itemBuilder: (context, index) => const Icon(
+                        Icons.star,
+                        color: Colors.amber,
+                      ),
+                      itemCount: 5,
+                      itemSize: 20.0,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      rating!.toStringAsFixed(1),
+                      style: const TextStyle(color: Colors.amber, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
